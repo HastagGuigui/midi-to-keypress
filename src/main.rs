@@ -4,6 +4,8 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::thread;
 use std::time::Duration;
+use std::env;
+use std::fs;
 
 use clap::{crate_version, App, Arg};
 
@@ -34,6 +36,8 @@ const SYS_DELAY_MS: u64 = 400;
 const OCTAVE_DELAY_MS: u64 = 10;
 
 fn main() {
+    //bruh i just realised what i tried to do has already been implemented and now i feel dumb
+    let matches_commandline: Vec<String> = env::args().collect();
     let matches = App::new("Midi Perform")
         .version(&*format!("v{}", crate_version!()))
         .author("Sean Cross <sean@xobs.io>")
@@ -66,6 +70,7 @@ fn main() {
     }
     let device_name = matches.value_of("device");
     let mappings_file = matches.value_of("mappings");
+    println!("{}", mappings_file.unwrap());
     run(device_name, mappings_file).unwrap();
 }
 
@@ -86,7 +91,7 @@ fn midi_callback(_timestamp_us: u64, raw_message: &[u8], app_state: &AppState) {
                     MidiEvent::NoteOff => &note_mapping.off,
                 };
 
-                //println!("Found note mapping: {:?} for event {:?}, running sequence {:?}", note_mapping, msg.event(), sequence);
+                println!("Found note mapping: {:?} for event {:?}, running sequence {:?}", note_mapping, msg.event(), sequence);
                 for event in sequence {
                     match *event {
                         notemappings::Event::Delay(msecs) => {
@@ -147,9 +152,19 @@ fn midi_callback(_timestamp_us: u64, raw_message: &[u8], app_state: &AppState) {
 }
 
 fn generate_old_mappings(mappings: &mut NoteMappings) {
-    let keys = vec![
-        'q', '2', 'w', '3', 'e', 'r', '5', 't', '6', 'y', '7', 'u', 'i',
-    ];
+    println!("Reading file : ./mappings/test.txt");
+    let contents = fs::read_to_string("./mappings/test.txt").expect("error");
+
+    let mut is_old_way_of_inputting = false; 
+
+    println!("Keybinds: \"{}\"", contents.replace('\n', "\", \""));
+    let mut keys: Vec<_> = contents.replace('\n', "").chars().collect();
+    if(keys[0] == '1') { //note: i do not know how to remove that without breaking the code because i am bad at rust
+        is_old_way_of_inputting = true;
+    }else{
+        is_old_way_of_inputting = false;
+    }
+    keys.drain(0..1);
 
     for (key_idx, key) in keys.iter().enumerate() {
         let base = MidiNote::C3.index();
@@ -169,20 +184,27 @@ fn generate_old_mappings(mappings: &mut NoteMappings) {
             None,
         );
 
-        note_mapping_lo.on =
-            NoteMapping::down_event(*key, Some(KbdKey::Control), Some(MOD_DELAY_MS));
-        note_mapping_lo.off =
-            NoteMapping::up_event(*key, Some(KbdKey::Control), Some(MOD_DELAY_MS));
+        if(is_old_way_of_inputting) {
+            note_mapping_lo.on = NoteMapping::down_event(*key, Some(KbdKey::Control), Some(MOD_DELAY_MS));
+            note_mapping_lo.off = NoteMapping::up_event(*key, Some(KbdKey::Control), Some(MOD_DELAY_MS));
 
-        note_mapping_mid.on = NoteMapping::down_event(*key, None, None);
-        note_mapping_mid.off = NoteMapping::up_event(*key, None, None);
+            note_mapping_mid.on = NoteMapping::down_event(*key, None, None);
+            note_mapping_mid.off = NoteMapping::up_event(*key, None, None);
+                        
+            note_mapping_hi.on = NoteMapping::down_event(*key, Some(KbdKey::Shift), Some(MOD_DELAY_MS));
+            note_mapping_hi.off = NoteMapping::up_event(*key, Some(KbdKey::Shift), Some(MOD_DELAY_MS));
+        } else {
+            note_mapping_lo.on =
+                NoteMapping::down_event(*key, None, Some(MOD_DELAY_MS));
+            note_mapping_lo.off =
+                NoteMapping::up_event(*key, None, Some(MOD_DELAY_MS));
 
-        note_mapping_hi.on = NoteMapping::down_event(*key, Some(KbdKey::Shift), Some(MOD_DELAY_MS));
-        note_mapping_hi.off = NoteMapping::up_event(*key, Some(KbdKey::Shift), Some(MOD_DELAY_MS));
-
+        }
         mappings.add(note_mapping_lo);
-        mappings.add(note_mapping_mid);
-        mappings.add(note_mapping_hi);
+        if(is_old_way_of_inputting){
+            mappings.add(note_mapping_mid);
+            mappings.add(note_mapping_hi);
+        }
     }
 
     // Add pad buttons on the top of my keyboard, which are on channel 9.
