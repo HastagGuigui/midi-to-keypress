@@ -37,7 +37,6 @@ const OCTAVE_DELAY_MS: u64 = 10;
 
 fn main() {
     //bruh i just realised what i tried to do has already been implemented and now i feel dumb
-    let matches_commandline: Vec<String> = env::args().collect();
     let matches = App::new("Midi Perform")
         .version(&*format!("v{}", crate_version!()))
         .author("Sean Cross <sean@xobs.io>")
@@ -70,7 +69,6 @@ fn main() {
     }
     let device_name = matches.value_of("device");
     let mappings_file = matches.value_of("mappings");
-    println!("{}", mappings_file.unwrap());
     run(device_name, mappings_file).unwrap();
 }
 
