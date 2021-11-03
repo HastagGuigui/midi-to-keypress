@@ -157,10 +157,8 @@ fn generate_old_mappings(mappings: &mut NoteMappings) {
 
     println!("Keybinds: \"{}\"", contents.replace('\n', "\", \""));
     let mut keys: Vec<_> = contents.replace('\n', "").chars().collect();
-    if(keys[0] == '1') { //note: i do not know how to remove that without breaking the code because i am bad at rust
+    if keys[0] == '1' { //note: i do not know how to remove that without breaking the code because i am bad at rust
         is_old_way_of_inputting = true;
-    }else{
-        is_old_way_of_inputting = false;
     }
     keys.drain(0..1);
 
@@ -182,7 +180,7 @@ fn generate_old_mappings(mappings: &mut NoteMappings) {
             None,
         );
 
-        if(is_old_way_of_inputting) {
+        if is_old_way_of_inputting {
             note_mapping_lo.on = NoteMapping::down_event(*key, Some(KbdKey::Control), Some(MOD_DELAY_MS));
             note_mapping_lo.off = NoteMapping::up_event(*key, Some(KbdKey::Control), Some(MOD_DELAY_MS));
 
@@ -199,7 +197,7 @@ fn generate_old_mappings(mappings: &mut NoteMappings) {
 
         }
         mappings.add(note_mapping_lo);
-        if(is_old_way_of_inputting){
+        if is_old_way_of_inputting {
             mappings.add(note_mapping_mid);
             mappings.add(note_mapping_hi);
         }
